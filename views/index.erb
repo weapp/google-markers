@@ -1,0 +1,80 @@
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <title>Google Maps Multiple Markers</title>
+    <script src="http://maps.google.com/maps/api/js?sensor=false"
+            type="text/javascript"></script>
+
+    <script type="text/javascript" src="https://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js"></script>
+
+    <style>
+      html{height:100%; padding: 0; margin: 0}
+      body{height:100%; padding: 0; margin: 0}
+      .box{position: absolute;z-index: 999999;padding: 1em;background: #FFF}
+    </style>
+  </head>
+  <body>
+     <div class="box">
+       <h1>Simple Echo & Chat Server</h1>
+       <form id="form">
+         <input type="text" id="input" value="send a message"></input>
+       </form>
+       <div id="msgs"></div>
+     </div>
+     <div id="map" style="width: 100%; height: 100%;"></div>
+  </body>
+
+  <script type="text/javascript">
+
+    window.onload = function(){
+      (function(){
+        var map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 6,
+          center: new google.maps.LatLng(40.4165000, -3.7025600),
+          mapTypeId: google.maps.MapTypeId.ROADMAP
+        });
+
+        var markers = [];
+        var markerClusterer = new MarkerClusterer(map, markers);
+
+        google.maps.event.addListener(map, 'bounds_changed', function() {
+          markerclusterer.redraw()
+        });
+
+        var router = {
+          msg : function(m){ show('ws msg: ' +  m.msg); },
+          location : function(m){
+            new_marker = new google.maps.Marker({
+              position: new google.maps.LatLng(m.lat, m.lon)
+            })
+            markers.push(new_marker);
+            markerClusterer.addMarker(new_marker)
+          }
+        }
+
+        var show = function(el){
+          return function(msg){ el.innerHTML = msg + '<br />' + el.innerHTML; }
+        }(document.getElementById('msgs'));
+
+        var ws       = new WebSocket('ws://' + window.location.host + window.location.pathname);
+        ws.onopen    = function()  { show('ws open'); };
+        ws.onclose   = function()  { show('ws close'); }
+        ws.onmessage = function(m) {
+          data = JSON.parse(m.data);
+          controller = router[data["type"]] || function(data){}
+          controller(data);
+        };
+
+        var sender = function(f){
+          var input     = document.getElementById('input');
+          input.onclick = function(){ input.value = "" };
+          f.onsubmit    = function(){
+            ws.send(JSON.stringify({"type": "msg", "msg": input.value}));
+            input.value = "send a message";
+            return false;
+          }
+        }(document.getElementById('form'));
+      })();
+    }
+  </script>
+</html>
