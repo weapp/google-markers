@@ -17,7 +17,7 @@
      <div class="box">
        <h1>Simple Echo & Chat Server</h1>
        <form id="form">
-         <input type="text" id="input" value="send a message"></input>
+         <input type="text" id="input" placeholder="send a message"></input>
        </form>
        <div id="msgs"></div>
      </div>
@@ -35,7 +35,11 @@
         });
 
         var markers = [];
-        var markerClusterer = new MarkerClusterer(map, markers);
+        var markerClusterer = new MarkerClusterer(map, markers, { gridSize: 40 });
+        var imageUrl = 'http://chart.apis.google.com/chart?cht=mm&chs=24x32&' +
+          'chco=FFFFFF,008CFF,000000&ext=.png';
+        var markerImage = new google.maps.MarkerImage(imageUrl,
+          new google.maps.Size(24, 32));
 
         google.maps.event.addListener(map, 'bounds_changed', function() {
           markerclusterer.redraw()
@@ -45,7 +49,8 @@
           msg : function(m){ show('ws msg: ' +  m.msg); },
           location : function(m){
             new_marker = new google.maps.Marker({
-              position: new google.maps.LatLng(m.lat, m.lon)
+              position: new google.maps.LatLng(m.lat, m.lon),
+              icon: markerImage
             })
             markers.push(new_marker);
             markerClusterer.addMarker(new_marker)
@@ -70,7 +75,7 @@
           input.onclick = function(){ input.value = "" };
           f.onsubmit    = function(){
             ws.send(JSON.stringify({"type": "msg", "msg": input.value}));
-            input.value = "send a message";
+            input.value = "";
             return false;
           }
         }(document.getElementById('form'));
