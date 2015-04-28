@@ -4,6 +4,7 @@ require 'bundler/setup'
 Bundler.require(:default)
 require 'json'
 require './sample_location'
+require './geo'
 
 String.class_eval do
   def join
@@ -16,6 +17,11 @@ class GMaps < Sinatra::Base
   def broadcast_location(location)
     msg = location.merge(type: 'location').to_json
     GMaps.sockets.each { |socket| socket.send(msg) }
+  end
+
+  def broadcast_location_by_ip(ip)
+    location = Geo.from(ip)
+    broadcast_location(location) if location
   end
 
   def initialize
@@ -43,11 +49,13 @@ class GMaps < Sinatra::Base
         ws.onopen do
           ws.send({type: 'msg', msg: 'Hello World!'}.to_json)
           settings.sockets << ws
+          broadcast_location_by_ip(env["REMOTE_ADDR"])
         end
         ws.onmessage do |msg|
           EM.next_tick do
             settings.sockets.each do |s|
               s.send(msg)
+              broadcast_location_by_ip(JSON[msg]["msg"])
               broadcast_location(sample_location)
             end
           end

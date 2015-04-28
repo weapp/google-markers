@@ -9,5 +9,7 @@ gem 'thin'
 gem "hiredis"
 gem "redis", ">= 2.2.0", :require => ["redis", "redis/connection/hiredis"]
 
+gem 'geoip'
+
 gem 'pry', group: 'development'
 gem 'rspec', group: 'development'
