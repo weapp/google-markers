@@ -20,6 +20,7 @@ class GMaps < Sinatra::Base
   end
 
   def broadcast_location_by_ip(ip)
+    p "byip", ip
     location = Geo.from(ip)
     broadcast_location(location) if location
   end
@@ -56,7 +57,7 @@ class GMaps < Sinatra::Base
             settings.sockets.each do |s|
               s.send(msg)
               broadcast_location_by_ip(JSON[msg]["msg"])
-              broadcast_location(sample_location)
+              @redis.publish("locations", sample_location.to_json)
             end
           end
         end
