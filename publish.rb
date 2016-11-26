@@ -6,9 +6,15 @@ require 'json'
 require './sample_location'
 
 
+def rnd
+  (rand - 0.5) * 0.03 + (rand - 0.5) * 0.03 + (rand - 0.5) * 0.03
+end
+
 redis = Redis.new(:driver => :hiredis)
-30.times do
-  p loc = sample_location.to_json
+1130.times do
+  loc = sample_location
+  nw = {lat: loc[:lat] + rnd, lon: loc[:lon] + rnd}
+  p loc = nw.to_json
   redis.publish("locations", loc)
   sleep(0.1)
 end
