@@ -32,27 +32,26 @@
   </body>
 
   <script type="text/javascript">
-    function now() {
-      return Date.now() / 1000
-    }
+    function HotMarkers(alive_seconds){
+      this._markers = []
 
-    function Markers(){
-      function heat_markers(list) {
-        return list.map(function(obj){
-            obj["value"] = (obj["when"] - now() + 100);
+      function now() {
+        return Date.now() / 1000
+      }
+
+      this.markers = function(list) {
+        return this._markers = this._markers.map(function(obj){
+            obj["value"] = (obj["when"] - now() + alive_seconds);
             return obj;
           }).filter(function(obj){
             return obj["value"] > 0;
           });
       }
 
-      this.markers = []
-
       this.push = function(pos) {
-        pos["when"] = now()
-        this.markers.push(pos);
-        this.markers = heat_markers(this.markers);
-        return this.markers;
+        pos["when"] || (pos["when"] = now())
+        this._markers.push(pos);
+        return this.markers();
       }
 
     }
@@ -66,7 +65,7 @@
         mapTypeId: google.maps.MapTypeId.ROADMAP
       });
 
-      var markers = new Markers();
+      var markers = new HotMarkers(100);
 
       // heatmap layer
       // this.heatmap = new HeatmapOverlay(map,
@@ -101,44 +100,46 @@
 
     function WS(router) {
       this.ws = new WebSocket('ws://' + window.location.host + window.location.pathname);
-      this.ws.onopen = router["onopen"]
-      this.ws.onclose   = router["onclose"]
+      // this.ws.onopen = router["onopen"]
+      // this.ws.onclose   = router["onclose"]
       this.ws.onmessage = function(m) {
-        data = JSON.parse(m.data);
-        controller = router[data["type"]] || function(data){}
-        controller(data);
+        router.call(JSON.parse(m.data));
       };
 
-      this.send_msg = function(value) {
-        this.ws.send(JSON.stringify({"type": "msg", "msg": value}));
+      this.send = function(value) {
+        this.ws.send(JSON.stringify(value));
       }
     }
 
+    function Router(routes) {
+        this.call = function(data){
+          controller = routes[data["type"]] || function(data){}
+          controller(data);
+        }
+    }
+
+    function Chat(ws, form, input, messages){
+      this.push = function(msg){
+        messages.innerHTML = msg + '<br />' + messages.innerHTML;
+      }
+
+      form.onsubmit = function(){
+        ws.send({"type": "msg", "msg": input.value})
+        input.value = "";
+        return false;
+      }
+    }
 
     window.onload = function(){
-
       (function(){
-        var byId = function(id) {
-          return document.getElementById(id) 
-        }
-
-        var madrid = {lat: 40.4165000, lng: -3.7025600}
-        var map = new Map(byId('map'), madrid)
-        var router = {
-          msg : function(m){ show_message('ws msg: ' +  m.msg); },
+        var byId = document.getElementById.bind(document)
+        var map = new Map(byId('map'), {lat: 40.4165000, lng: -3.7025600})
+        var router = new Router({
+          msg : function(m){ chat.push('ws msg..: ' +  m.msg); },
           location : function(m){ map.push(m) }
-        }
-        var show_message = function(el){
-          return function(msg){ el.innerHTML = msg + '<br />' + el.innerHTML; }
-        }(byId('msgs'));
+        })
         var ws = new WS(router);
-        var sender = function(f, input){
-          f.onsubmit = function(){
-            ws.send_msg(input.value)
-            input.value = "";
-            return false;
-          }
-        }(byId('form'), byId('input'));
+        var chat = new Chat(ws, byId('form'), byId('input'), byId('msgs'));
       })();
     }
   </script>
