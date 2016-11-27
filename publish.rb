@@ -11,10 +11,10 @@ def rnd
 end
 
 redis = Redis.new(:driver => :hiredis)
-1130.times do
+5000.times do
   loc = sample_location
   nw = {lat: loc[:lat] + rnd, lon: loc[:lon] + rnd}
   p loc = nw.to_json
   redis.publish("locations", loc)
-  sleep(0.1)
+  sleep(1)
 end
